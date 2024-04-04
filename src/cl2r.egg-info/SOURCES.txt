@@ -1,0 +1,7 @@
+README.md
+setup.py
+src/cl2r.egg-info/PKG-INFO
+src/cl2r.egg-info/SOURCES.txt
+src/cl2r.egg-info/dependency_links.txt
+src/cl2r.egg-info/entry_points.txt
+src/cl2r.egg-info/top_level.txt

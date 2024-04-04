@@ -22,7 +22,7 @@ from cl2r.train import train, classification
 from cl2r.eval import validation, evaluate
 from datetime import datetime
 
-from hoc import HocLoss
+from cl2r.hoc import HocLoss
 
 def main():
     # load params from the config file from yaml to dataclass
@@ -142,10 +142,10 @@ def main():
             #, "args.criterion_weight",args.criterion_weight,"args.spatial_lambda_c", args.spatial_lambda_c)
             mem_x, mem_y, mem_t = memory.get()
             train_task_set.add_samples(mem_x, mem_y, mem_t)
-            batchsampler = BalancedBatchSampler(train_task_set, n_classes=train_task_set.nb_classes, 
-                                                batch_size=args.batch_size, n_samples=len(train_task_set._x), 
-                                                seen_classes=args.seen_classes)
-            train_loader = DataLoader(train_task_set, batch_sampler=batchsampler, num_workers=args.num_workers) 
+            #batchsampler = BalancedBatchSampler(train_task_set, n_classes=train_task_set.nb_classes, 
+            #                                    batch_size=args.batch_size, n_samples=len(train_task_set._x), 
+            #                                    seen_classes=args.seen_classes)
+            train_loader = DataLoader(train_task_set, batch_size=args.batch_size, num_workers=args.num_workers) 
         else:
             train_loader = DataLoader(train_task_set, batch_size=args.batch_size, shuffle=True, 
                                       drop_last=True, num_workers=args.num_workers) 

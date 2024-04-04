@@ -54,17 +54,13 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 norm_intermediary_features = []
                 for old_int_f in old_intermediary_features:
                     if args.use_partial_memory == True:
-                        #print("use_partial_memory")
                         norm_old_intermediary_features.append((old_int_f[:args.batch_size//2]))
                     else:
-                        #print("full_memory")
                         norm_old_intermediary_features.append((old_int_f))
                 for int_f in intermediary_features:
                     if args.use_partial_memory == True:
-                        #print("use_partial_memory2")
                         norm_intermediary_features.append((int_f[:args.batch_size//2]))
                     else:
-                        #print("full_memory2")
                         norm_intermediary_features.append((int_f))
                 
                 pod_spatial_loss = args.spatial_lambda_c * pod(

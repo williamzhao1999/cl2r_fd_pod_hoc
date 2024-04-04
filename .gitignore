@@ -1,0 +1,10 @@
+__pycache__
+results/
+options/dev/
+hyperexps/*
+*/.ipynb_checkpoints/*
+notebooks/
+**/*.pyc
+venv/
+data/
+checkpoints*/

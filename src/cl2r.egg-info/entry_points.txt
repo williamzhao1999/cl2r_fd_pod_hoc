@@ -1,0 +1,3 @@
+[console_scripts]
+cl2r = cl2r.main:main
+
