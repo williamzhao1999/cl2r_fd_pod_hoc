@@ -13,5 +13,6 @@ fixed_weight: False
 pod_loss: False
 type_update_criterion_weight: "pod"
 use_partial_memory: True
-cuda_device: "cuda:1"
+cuda_device: "cuda:0"
+method: "hoc"
 start: 60

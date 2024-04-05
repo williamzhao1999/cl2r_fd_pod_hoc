@@ -142,10 +142,10 @@ def main():
             #, "args.criterion_weight",args.criterion_weight,"args.spatial_lambda_c", args.spatial_lambda_c)
             mem_x, mem_y, mem_t = memory.get()
             train_task_set.add_samples(mem_x, mem_y, mem_t)
-            #batchsampler = BalancedBatchSampler(train_task_set, n_classes=train_task_set.nb_classes, 
-            #                                    batch_size=args.batch_size, n_samples=len(train_task_set._x), 
-            #                                    seen_classes=args.seen_classes)
-            train_loader = DataLoader(train_task_set, batch_size=args.batch_size, num_workers=args.num_workers) 
+            batchsampler = BalancedBatchSampler(train_task_set, n_classes=train_task_set.nb_classes, 
+                                                batch_size=args.batch_size, n_samples=len(train_task_set._x), 
+                                                seen_classes=args.seen_classes)
+            train_loader = DataLoader(train_task_set, batch_sampler=batchsampler, num_workers=args.num_workers) 
         else:
             train_loader = DataLoader(train_task_set, batch_size=args.batch_size, shuffle=True, 
                                       drop_last=True, num_workers=args.num_workers) 
