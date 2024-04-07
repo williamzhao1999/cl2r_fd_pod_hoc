@@ -56,6 +56,7 @@ class HocLoss(nn.Module):
         # Get the labels of out0 and out1 samples
         labels_0 = labels.unsqueeze(1).expand(-1, batch_size)  # Shape: (batch_size, batch_size)
         labels_1 = labels.unsqueeze(0).expand(batch_size, -1)  # Shape: (batch_size, batch_size)
+        
 
         # Mask similarities between the same class
         class_mask = labels_0 == labels_1

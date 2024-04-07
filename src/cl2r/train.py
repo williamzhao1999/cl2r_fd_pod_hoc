@@ -28,24 +28,27 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
             with torch.no_grad():
                 outputs = previous_net(inputs)
                 feature_old = outputs['features']
-                logits_old = outputs['output']
                 old_intermediary_features = outputs['attention']
+
+            
 
             if args.use_partial_memory == True:
                 #print("use_partial_memory3")
                 feat_old = feature_old[:args.batch_size//2] # only on memory samples
                 feat_new = feature[:args.batch_size//2]     # only on memory samples
+                targ = targets[:args.batch_size//2]
             else:
                 #print("full_memory3")
                 feat_old = feature_old
                 feat_new = feature
+                targ = targets
 
             norm_feature_old, norm_feature_new = l2_norm(feat_old), l2_norm(feat_new)
             if args.method == "fd":
                 loss_fd = EmbeddingsSimilarity(norm_feature_new, norm_feature_old)
                 loss = loss + args.criterion_weight * loss_fd
             elif args.method == "hoc":
-                loss_feat = add_loss(norm_feature_new, norm_feature_old, targets)
+                loss_feat = add_loss(norm_feature_new, norm_feature_old, targ)
                 # Eq. 3 in the paper
                 loss = loss * 0.1 + (1 - 0.1) * loss_feat
 
@@ -71,7 +74,7 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 #      args.use_partial_memory {args.use_partial_memory}, args.criterion_weight {args.criterion_weight}")
                 loss += pod_spatial_loss
             
-
+        
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

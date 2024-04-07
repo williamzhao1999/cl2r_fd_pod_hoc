@@ -102,6 +102,7 @@ def main():
     add_loss = None
     if args.method == "hoc":
         add_loss = HocLoss(mu_=10)
+        
 
     print(f"Starting Training")
     for task_id, (train_task_set, _) in enumerate(zip(scenario_train, scenario_val)):

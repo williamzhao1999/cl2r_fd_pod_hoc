@@ -10,9 +10,9 @@ criterion_weight_base: 1
 spatial_lambda_c_base: 3
 rehearsal: 20
 fixed_weight: False
-pod_loss: True
+pod_loss: False
 type_update_criterion_weight: "pod"
-cuda_device: "cuda:1"
 use_partial_memory: False
-start: 60
+cuda_device: "cuda:1"
 method: "hoc"
+start: 60

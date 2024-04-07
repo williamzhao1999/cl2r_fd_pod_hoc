@@ -19,7 +19,7 @@ class ExperimentParams():
     criterion_weight_base: float = 10
     rehearsal: int = 20
 
-    save_best: bool = True
+    save_best: bool = False
     pod_loss: bool = False
     method: str = "fd" #fd, hoc
     fixed_weight: bool = False
