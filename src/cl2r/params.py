@@ -19,11 +19,12 @@ class ExperimentParams():
     criterion_weight_base: float = 10
     rehearsal: int = 20
 
-    save_best: bool = False
+    save_best: bool = True
     pod_loss: bool = False
     method: str = "fd" #fd, hoc
     fixed_weight: bool = False
     use_partial_memory: bool = True
+    amp: bool = True
 
     cuda_device: str = "cuda"
     type_update_criterion_weight: str = "cl2r" #cl2r, pod

@@ -1,12 +1,12 @@
 import torch
 import torch.nn.functional as F
-
+import math
 import time
 
 from cl2r.utils import AverageMeter, log_epoch, l2_norm
 
 
-def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net, task_id, add_loss):
+def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net, task_id, add_loss, scaler):
     
     start = time.time()
     
@@ -15,8 +15,12 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
 
     net.train()
     for inputs, targets, t in train_loader:
-        
+
         inputs, targets = inputs.cuda(args.device), targets.cuda(args.device)
+
+        
+        
+            
         outputs = net(inputs)
         feature = outputs['features']
         output = outputs['output']
@@ -30,8 +34,6 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 feature_old = outputs['features']
                 old_intermediary_features = outputs['attention']
 
-            
-
             if args.use_partial_memory == True:
                 #print("use_partial_memory3")
                 feat_old = feature_old[:args.batch_size//2] # only on memory samples
@@ -44,37 +46,45 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 targ = targets
 
             norm_feature_old, norm_feature_new = l2_norm(feat_old), l2_norm(feat_new)
+
             if args.method == "fd":
                 loss_fd = EmbeddingsSimilarity(norm_feature_new, norm_feature_old)
                 loss = loss + args.criterion_weight * loss_fd
             elif args.method == "hoc":
                 loss_feat = add_loss(norm_feature_new, norm_feature_old, targ)
                 # Eq. 3 in the paper
+                cls_loss = loss
                 loss = loss * 0.1 + (1 - 0.1) * loss_feat
 
             if args.pod_loss == True:
-                norm_old_intermediary_features = []
-                norm_intermediary_features = []
+                n_old_intermediary_features = []
+                n_intermediary_features = []
                 for old_int_f in old_intermediary_features:
                     if args.use_partial_memory == True:
-                        norm_old_intermediary_features.append((old_int_f[:args.batch_size//2]))
+                        n_old_intermediary_features.append(old_int_f[:args.batch_size//2])
                     else:
-                        norm_old_intermediary_features.append((old_int_f))
+                        n_old_intermediary_features.append(old_int_f)
                 for int_f in intermediary_features:
                     if args.use_partial_memory == True:
-                        norm_intermediary_features.append((int_f[:args.batch_size//2]))
+                        n_intermediary_features.append(int_f[:args.batch_size//2])
                     else:
-                        norm_intermediary_features.append((int_f))
+                        n_intermediary_features.append(int_f)
                 
                 pod_spatial_loss = args.spatial_lambda_c * pod(
-                        norm_old_intermediary_features,
-                        norm_intermediary_features,
+                        n_old_intermediary_features,
+                        n_intermediary_features,
                 )
+                if math.isnan(pod_spatial_loss):
+                    f = open("demofile2.txt", "a")
+                    f.write("Now the file has more content!")
+                    f.close() 
                 #print(f"pod_spatial_loss {pod_spatial_loss}, args.spatial_lambda_c {args.spatial_lambda_c}, \
                 #      args.use_partial_memory {args.use_partial_memory}, args.criterion_weight {args.criterion_weight}")
-                loss += pod_spatial_loss
-            
-        
+                loss = loss + (-pod_spatial_loss)
+                print(f"cls loss: {cls_loss * 0.1}, hoc loss: {(1 - 0.1) * loss_feat}, pod loss: {pod_spatial_loss}, entire loss: {loss}")
+                
+
+                
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -116,6 +126,7 @@ def pod(
     :param only_old: Only apply loss to exemplars.
     :return: A float scalar loss.
     """
+    #print(list_attentions_a[0].shape, list_attentions_b[0].shape)
     assert len(list_attentions_a) == len(list_attentions_b)
 
     loss = torch.tensor(0.).to(list_attentions_a[0].device)

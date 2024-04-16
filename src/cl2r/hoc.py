@@ -32,7 +32,7 @@ class HocLoss(nn.Module):
     def _loss(self, out0, out1, labels):
         """Calculates infoNCE loss.
         This code implements Equation 4 in "Stationary Representations: Optimally Approximating Compatibility and Implications for Improved Model Replacements"
-
+        
         Args:
             feat_old:
                 features extracted with the old model.
@@ -46,6 +46,7 @@ class HocLoss(nn.Module):
         Returns:
             Mean loss over the mini-batch.
         """
+        
         ## create diagonal mask that only selects similarities between
         ## representations of the same images
         batch_size = out0.shape[0]

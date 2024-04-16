@@ -12,7 +12,7 @@ rehearsal: 20
 fixed_weight: False
 pod_loss: False
 type_update_criterion_weight: "pod"
-use_partial_memory: True
+use_partial_memory: False
 cuda_device: "cuda:1"
 method: "hoc"
 start: 60

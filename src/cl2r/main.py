@@ -100,9 +100,9 @@ def main():
                                 num_workers=args.num_workers)
 
     add_loss = None
+    scaler = None
     if args.method == "hoc":
         add_loss = HocLoss(mu_=10)
-        
 
     print(f"Starting Training")
     for task_id, (train_task_set, _) in enumerate(zip(scenario_train, scenario_val)):
@@ -158,7 +158,7 @@ def main():
         best_acc = 0
         print(f"Starting Epoch Loop at task {task_id + 1}/{scenario_train.nb_tasks}")
         for epoch in range(args.epochs):
-            train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net, task_id, add_loss)
+            train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net, task_id, add_loss, scaler)
             # acc_val = validation(args, net, query_loader, gallery_loader, task_id, selftest=(task_id == 0))
             # if task_id > 0:
             #     acc_val = validation(args, query_loader, gallery_loader, task_id)
