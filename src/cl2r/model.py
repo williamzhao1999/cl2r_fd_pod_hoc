@@ -143,33 +143,40 @@ class CifarResNet(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
 
-
         attentions = [feats_s1[-1], feats_s2[-1], feats_s3[-1]]
 
         return {"x": x, "attention": attentions}
 
     def forwardFeature(self, x):
         pass
+
     
 
 
 class Incremental_ResNet(nn.Module):
-    def __init__(self, starting_classes=100, feat_size=99):
+    def __init__(self, starting_classes=100, feat_size=99, fixed_c = True):
         super(Incremental_ResNet, self).__init__()
         self.feat_size = feat_size
+        self.fixed_c = fixed_c
         
         self.backbone = CifarResNet(ResNetBasicblock, 32, starting_classes)
-        self.out_dim = self.backbone.out_dim
         
+
+        self.out_dim = self.backbone.out_dim
         self.fc1 = nn.Linear(self.out_dim, self.feat_size, bias=False)
         self.fc2 = nn.Linear(self.feat_size, starting_classes, bias=False)
+        self.fc3 = nn.Linear(self.out_dim, starting_classes, bias=False)
 
             
     def forward(self, x):
         outputs = self.backbone(x) 
 
-        x = self.fc1(outputs['x'])
-        y = self.fc2(x)
+        if self.fixed_c:
+            x = self.fc1(outputs['x'])
+            y = self.fc2(x)
+        else:
+            x = outputs['x']
+            y = self.fc3(x)
 
         return {"features": x, "attention": outputs['attention'], "output": y}
 
@@ -189,11 +196,12 @@ def dsimplex(num_classes=10, device='cuda'):
     return ds
 
 
-def ResNet32Cifar(resume_path, starting_classes=100, feat_size=99, device=0):
-    model = Incremental_ResNet(starting_classes, feat_size)
-    fixed_weights = dsimplex(num_classes=(feat_size + 1), device=device)
-    model.fc2.weight.requires_grad = False  # set no gradient for the fixed classifier
-    model.fc2.weight.copy_(fixed_weights)   # set the weights for the classifier
+def ResNet32Cifar(resume_path, starting_classes=100, feat_size=99, device=0, args = {}):
+    model = Incremental_ResNet(starting_classes, feat_size, args.fixed_c)
+    if args.fixed_c:
+        fixed_weights = dsimplex(num_classes=(feat_size + 1), device=device)
+        model.fc2.weight.requires_grad = False  # set no gradient for the fixed classifier
+        model.fc2.weight.copy_(fixed_weights)   # set the weights for the classifier
     
     if resume_path not in [None, '']:
         print(f"Resuming Weights from {resume_path}")

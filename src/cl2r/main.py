@@ -3,6 +3,7 @@ import yaml
 import os
 import os.path as osp
 import numpy as np
+import random
 
 from continuum import ClassIncremental
 from continuum.datasets import CIFAR100
@@ -43,10 +44,12 @@ def main():
     print(f"Current args:\n{vars(args)}")
     
     # dataset
+    # reproducibility
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(1811)
     np.random.seed(1811)
+    random.seed(1811)
     data_path = osp.join(args.root_folder, "data")
     if not osp.exists(data_path):
         os.makedirs(data_path)
@@ -101,7 +104,7 @@ def main():
 
     add_loss = None
     scaler = None
-    if args.method == "hoc":
+    if args.method == "hoc" or args.method == "hoc_new":
         add_loss = HocLoss(mu_=10)
 
     print(f"Starting Training")
@@ -112,13 +115,15 @@ def main():
         net = ResNet32Cifar(resume_path=rp, 
                             starting_classes=100, 
                             feat_size=99, 
-                            device=args.device)
+                            device=args.device,
+                            args=args)
 
         if task_id > 0:
             previous_net = ResNet32Cifar(resume_path=ckpt_path, 
                                          starting_classes=100, 
                                          feat_size=99, 
-                                         device=args.device)
+                                         device=args.device,
+                                         args=args)
             previous_net.eval() 
         else:
             previous_net = None

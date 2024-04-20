@@ -18,15 +18,13 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
 
         inputs, targets = inputs.cuda(args.device), targets.cuda(args.device)
 
-        
-        
-            
         outputs = net(inputs)
         feature = outputs['features']
         output = outputs['output']
         intermediary_features = outputs['attention']
 
         loss = criterion_cls(output, targets)
+        cls_loss = loss
         
         if previous_net is not None:
             with torch.no_grad():
@@ -47,25 +45,17 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
 
             norm_feature_old, norm_feature_new = l2_norm(feat_old), l2_norm(feat_new)
 
-            if args.method == "fd":
-                loss_fd = EmbeddingsSimilarity(norm_feature_new, norm_feature_old)
-                loss = loss + args.criterion_weight * loss_fd
-            elif args.method == "hoc":
-                loss_feat = add_loss(norm_feature_new, norm_feature_old, targ)
-                # Eq. 3 in the paper
-                cls_loss = loss
-                loss = loss * 0.1 + (1 - 0.1) * loss_feat
-
-            if args.pod_loss == True:
+            
+            if args.pod_loss:
                 n_old_intermediary_features = []
                 n_intermediary_features = []
                 for old_int_f in old_intermediary_features:
-                    if args.use_partial_memory == True:
+                    if args.use_partial_memory:
                         n_old_intermediary_features.append(old_int_f[:args.batch_size//2])
                     else:
                         n_old_intermediary_features.append(old_int_f)
                 for int_f in intermediary_features:
-                    if args.use_partial_memory == True:
+                    if args.use_partial_memory:
                         n_intermediary_features.append(int_f[:args.batch_size//2])
                     else:
                         n_intermediary_features.append(int_f)
@@ -77,13 +67,33 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 if math.isnan(pod_spatial_loss):
                     f = open("demofile2.txt", "a")
                     f.write("Now the file has more content!")
-                    f.close() 
+                    f.close()
                 #print(f"pod_spatial_loss {pod_spatial_loss}, args.spatial_lambda_c {args.spatial_lambda_c}, \
                 #      args.use_partial_memory {args.use_partial_memory}, args.criterion_weight {args.criterion_weight}")
-                loss = loss + (-pod_spatial_loss)
-                print(f"cls loss: {cls_loss * 0.1}, hoc loss: {(1 - 0.1) * loss_feat}, pod loss: {pod_spatial_loss}, entire loss: {loss}")
+                if args.method != 'hoc_new':
+                    if args.pod_loss_negative:
+                        loss = loss + (-pod_spatial_loss)
+                        #print(f"pod loss: {-pod_spatial_loss}")
+                    else:
+                        loss = loss + pod_spatial_loss
+                        #print(f"pod loss: {pod_spatial_loss}")
                 
+            
+            if args.method == "fd":
+                loss_fd = EmbeddingsSimilarity(norm_feature_new, norm_feature_old)
+                loss = loss + args.criterion_weight * loss_fd
+                #print(f"loss fd: {loss_fd}")
+            elif args.method == "hoc" or args.method == "hoc_new":
+                loss_feat = add_loss(norm_feature_new, norm_feature_old, targ)
+                # Eq. 3 in the paper
+                if args.method == "hoc":
+                    loss = loss * 0.1 + (1 - 0.1) * (loss_feat)
+                    #print(f"hoc loss: {loss}")
+                elif args.method == "hoc_new":
+                    loss = loss * 0.1 + (1 - 0.1) * (loss_feat + pod_spatial_loss)
+                    #print(f"new hoc loss: {loss}")
 
+            #print(f"cls loss: {cls_loss}, entire loss: {loss}")
                 
         optimizer.zero_grad()
         loss.backward()

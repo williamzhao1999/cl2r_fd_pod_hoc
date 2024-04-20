@@ -71,15 +71,14 @@ class BalancedBatchSampler(BatchSampler):
 
 
 def create_pairs(data_path, num_pos_pairs=3000, num_neg_pairs=3000):
-
-    dataset = CIFAR10(data_path=data_path, train=False, download=True)
+    dataset = CIFAR10(data_path, train=False, download=True)
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.4914, 0.4822, 0.4465),
                                                         (0.2023, 0.1994, 0.2010))
                                     ])
     
-    data = np.array(dataset.dataset.data)
-    targets = np.asarray(dataset.dataset.targets) 
+    data = np.array(dataset.data)
+    targets = np.asarray(dataset.targets) 
     
     imgs = []
     labels = []
@@ -135,21 +134,24 @@ def update_spatial_lambda_c(args, num_old_classes, num_new_classes):
     return args.spatial_lambda_c
 
   
-def extract_features(args, net, loader):
+def extract_features(args, net, loader, return_labels=False):
     features = None
+    labels = None
     net.eval()
     with torch.no_grad():
         for inputs in loader:
-            inputs = inputs[0].cuda(args.device)
-            outputs = net(inputs)
-            f = outputs['features']
-
+            images = inputs[0].to(args.device)
+            with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=args.amp):
+                f = net(images)['features']
             f = l2_norm(f)
             if features is not None:
                 features = torch.cat((features, f), 0)
+                labels = torch.cat((labels, inputs[1]), 0) if return_labels else None
             else:
                 features = f
-    
+                labels = inputs[1] if return_labels else None
+    if return_labels:
+        return features.detach().cpu(), labels.detach().cpu()
     return features.detach().cpu().numpy()
 
 

@@ -1,6 +1,5 @@
 import numpy as np 
 
-
 def average_compatibility(matrix=None):
     steps = matrix.shape[0]
     position = np.zeros_like(matrix, dtype=bool)

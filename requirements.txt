@@ -2,3 +2,4 @@ torch
 torchvision
 continuum
 scikit-learn
+faiss-cpu
