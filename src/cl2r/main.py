@@ -76,8 +76,8 @@ def main():
     args.nb_tasks = scenario_train.nb_tasks
 
     val_transform = [transforms.ToTensor(),
-                     transforms.Normalize((0.5071, 0.4867, 0.4408),
-                                          (0.2675, 0.2565, 0.2761))
+                       transforms.Normalize((0.5071, 0.4867, 0.4408),
+                                            (0.2675, 0.2565, 0.2761))
                     ]
     dataset_val = CIFAR100(data_path=data_path, train=False, download=True)
     # create task-sets for lifelong learning
@@ -93,14 +93,6 @@ def main():
                                        nb_total_classes=args.num_classes
                                     )
 
-    print(f"Creating Pairs Dataset")
-    query_set, gallery_set = create_pairs(data_path=data_path)
-    query_loader = DataLoader(query_set, batch_size=args.batch_size, 
-                              shuffle=False, drop_last=False, 
-                              num_workers=args.num_workers)
-    gallery_loader = DataLoader(gallery_set, batch_size=args.batch_size,
-                                shuffle=False, drop_last=False, 
-                                num_workers=args.num_workers)
 
     add_loss = None
     scaler = None
@@ -149,8 +141,8 @@ def main():
             mem_x, mem_y, mem_t = memory.get()
             train_task_set.add_samples(mem_x, mem_y, mem_t)
             batchsampler = BalancedBatchSampler(train_task_set, n_classes=train_task_set.nb_classes, 
-                                                batch_size=args.batch_size, n_samples=len(train_task_set._x), 
-                                                seen_classes=args.seen_classes)
+                                                    batch_size=args.batch_size, n_samples=len(train_task_set._x), 
+                                                    seen_classes=args.seen_classes, rehearsal=args.rehearsal)
             train_loader = DataLoader(train_task_set, batch_sampler=batchsampler, num_workers=args.num_workers) 
         else:
             train_loader = DataLoader(train_task_set, batch_size=args.batch_size, shuffle=True, 
@@ -168,8 +160,8 @@ def main():
             # if task_id > 0:
             #     acc_val = validation(args, query_loader, gallery_loader, task_id)
             # else:
-            acc_val = classification(args, net, val_loader, criterion_cls)
             scheduler_lr.step()
+            acc_val = classification(args, net, val_loader, criterion_cls)
             
             if (acc_val > best_acc and args.save_best) or (not args.save_best and epoch == args.epochs - 1):
                 best_acc = acc_val
@@ -181,6 +173,7 @@ def main():
         args.seen_classes = torch.tensor(list(memory.seen_classes), device=args.device)
         
     print(f"Starting Evaluation")
+    
     query_set, gallery_set = create_pairs(data_path=data_path)
     query_loader = DataLoader(query_set, batch_size=args.batch_size, 
                               shuffle=False, drop_last=False, 

@@ -15,5 +15,5 @@ type_update_criterion_weight: "pod"
 use_partial_memory: True
 cuda_device: "cuda:1"
 method: "hoc"
-start: 10
-increment: 15
+start: 20
+increment: 20

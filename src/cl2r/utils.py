@@ -6,8 +6,7 @@ from torch.utils.data.sampler import BatchSampler
 import numpy as np
 from PIL import Image
 from collections import defaultdict as dd
-
-from continuum.datasets import CIFAR10
+from torchvision.datasets import CIFAR10 as CIFAR10_torch
 
 def l2_norm(input, axis=1):
     norm = torch.norm(input, 2, axis, True)
@@ -43,13 +42,21 @@ class ImagesDataset(Dataset):
 
 
 class BalancedBatchSampler(BatchSampler):
-    def __init__(self, dataset, batch_size, n_classes, n_samples, seen_classes):
+    def __init__(self, dataset, batch_size, n_classes, n_samples, seen_classes, rehearsal=0):
         self.dataset = dataset
         self.batch_size = batch_size
         self.n_classes = n_classes
         self.n_samples = n_samples
         self.seen_classes = seen_classes
+        self.rehearsal = rehearsal
         self.n_batches = self.n_samples // self.batch_size # drop last
+        if self.n_batches == 0:
+            self.n_batches = 1
+            self.size = self.n_samples if rehearsal == 0 else self.n_samples//2
+        elif rehearsal == 0:
+            self.size = self.batch_size
+        else:
+            self.size = self.batch_size//2
         self.index_dic = dd(list)
         self.indices = []
         self.seen_indices = []
@@ -62,8 +69,11 @@ class BalancedBatchSampler(BatchSampler):
     def __iter__(self):
         for _ in range(self.n_batches):
             batch = []
-            batch.extend(np.random.choice(self.seen_indices, size=self.batch_size//2, replace=False))
-            batch.extend(np.random.choice(self.indices, size=self.batch_size//2, replace=False))
+            if self.rehearsal > 0:
+                replace = True if len(self.seen_indices) <= self.size else False
+                batch.extend(np.random.choice(self.seen_indices, size=self.size, replace=replace))
+            replace = True if len(self.indices) <= self.size else False
+            batch.extend(np.random.choice(self.indices, size=self.size, replace=replace))
             yield batch
 
     def __len__(self):
@@ -71,51 +81,24 @@ class BalancedBatchSampler(BatchSampler):
 
 
 def create_pairs(data_path, num_pos_pairs=3000, num_neg_pairs=3000):
-    dataset = CIFAR10(data_path, train=False, download=True)
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                                        (0.2023, 0.1994, 0.2010))
+
+    transform = transforms.Compose([
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5071, 0.4867, 0.4408),
+                                                        (0.2675, 0.2565, 0.2761))
                                     ])
-    
-    data = np.array(dataset.data)
-    targets = np.asarray(dataset.targets) 
-    
-    imgs = []
-    labels = []
-    c_p = 0
-    c_n = 0
-    
-    while len(labels) < num_neg_pairs+num_neg_pairs:
-        id0, id1 = np.random.choice(np.arange(0,len(targets)),2)
-        if targets[id0] == targets[id1] and c_p < num_pos_pairs:
-            labels.append(True)
-            c_p += 1
-        elif targets[id0] != targets[id1] and c_n < num_neg_pairs:
-            labels.append(False)
-            c_n += 1
-        else:
-            continue
-        if isinstance(data[id0], str):
-            img0 = Image.open(data[id0]).convert('RGB')
-        else:
-            img0 = data[id0]
-        if isinstance(data[id1], str):
-            img1 = Image.open(data[id1]).convert('RGB')
-        else: 
-            img1 = data[id1]
-        img0 = transform(img0)
-        img1 = transform(img1)
-        imgs.append(torch.unsqueeze(img0,0))
-        imgs.append(torch.unsqueeze(img1,0))
-        print(f"{c_p+c_n}/{num_neg_pairs+num_pos_pairs} pairs", end="\r")
-    
-    print(f"{len(labels)}/{num_neg_pairs+num_pos_pairs} pairs")
-    data = torch.cat(imgs).detach().numpy()
-    targets = np.asarray(labels)
 
-    query_set = ImagesDataset(data[0::2], targets)
-    gallery_set = ImagesDataset(data[1::2], targets)
-
+    gallery_set = CIFAR10_torch(root=data_path, 
+                                train=False, 
+                                download=True, 
+                                transform=transform
+                               )
+    
+    query_set = CIFAR10_torch(root=data_path, 
+                              train=True, 
+                              download=True, 
+                              transform=transform
+                             )    
     return query_set, gallery_set
    
 
