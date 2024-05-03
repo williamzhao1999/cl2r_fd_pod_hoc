@@ -33,12 +33,10 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 old_intermediary_features = outputs['attention']
 
             if args.use_partial_memory == True:
-                #print("use_partial_memory3")
                 feat_old = feature_old[:args.batch_size//2] # only on memory samples
                 feat_new = feature[:args.batch_size//2]     # only on memory samples
                 targ = targets[:args.batch_size//2]
             else:
-                #print("full_memory3")
                 feat_old = feature_old
                 feat_new = feature
                 targ = targets
@@ -64,36 +62,25 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                         n_old_intermediary_features,
                         n_intermediary_features,
                 )
-                if math.isnan(pod_spatial_loss):
-                    f = open("demofile2.txt", "a")
-                    f.write("Now the file has more content!")
-                    f.close()
-                #print(f"pod_spatial_loss {pod_spatial_loss}, args.spatial_lambda_c {args.spatial_lambda_c}, \
-                #      args.use_partial_memory {args.use_partial_memory}, args.criterion_weight {args.criterion_weight}")
+
                 if args.method != 'hoc_new':
                     if args.pod_loss_negative:
                         loss = loss + (-pod_spatial_loss)
-                        #print(f"pod loss: {-pod_spatial_loss}")
                     else:
                         loss = loss + pod_spatial_loss
-                        #print(f"pod loss: {pod_spatial_loss}")
                 
             
             if args.method == "fd":
                 loss_fd = EmbeddingsSimilarity(norm_feature_new, norm_feature_old)
                 loss = loss + args.criterion_weight * loss_fd
-                #print(f"loss fd: {loss_fd}")
             elif args.method == "hoc" or args.method == "hoc_new":
                 loss_feat = add_loss(norm_feature_new, norm_feature_old, targ)
                 # Eq. 3 in the paper
                 if args.method == "hoc":
                     loss = loss * 0.1 + (1 - 0.1) * (loss_feat)
-                    #print(f"hoc loss: {loss}")
                 elif args.method == "hoc_new":
                     loss = loss * 0.1 + (1 - 0.1) * (loss_feat + pod_spatial_loss)
-                    #print(f"new hoc loss: {loss}")
 
-            #print(f"cls loss: {cls_loss}, entire loss: {loss}")
                 
         optimizer.zero_grad()
         loss.backward()
