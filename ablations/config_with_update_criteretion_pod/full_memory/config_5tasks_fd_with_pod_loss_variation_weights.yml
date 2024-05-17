@@ -14,4 +14,5 @@ pod_loss: True
 type_update_criterion_weight: "pod"
 cuda_device: "cuda:1"
 use_partial_memory: False
-start: 60
+start: 20
+increment: 20

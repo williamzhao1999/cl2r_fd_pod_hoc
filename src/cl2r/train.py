@@ -32,7 +32,7 @@ def train(args, net, train_loader, optimizer, epoch, criterion_cls, previous_net
                 feature_old = outputs['features']
                 old_intermediary_features = outputs['attention']
 
-            if args.use_partial_memory == True:
+            if args.use_partial_memory:
                 feat_old = feature_old[:args.batch_size//2] # only on memory samples
                 feat_new = feature[:args.batch_size//2]     # only on memory samples
                 targ = targets[:args.batch_size//2]

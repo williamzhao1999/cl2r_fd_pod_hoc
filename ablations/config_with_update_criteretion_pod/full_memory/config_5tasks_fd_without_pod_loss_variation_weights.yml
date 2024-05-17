@@ -6,7 +6,7 @@ stages:
 batch_size: 128
 num_workers: 8
 
-criterion_weight_base: 5
+criterion_weight_base: 1
 spatial_lambda_c_base: 3
 rehearsal: 20
 fixed_weight: False
@@ -14,4 +14,5 @@ pod_loss: False
 type_update_criterion_weight: "pod"
 use_partial_memory: False
 cuda_device: "cuda:1"
-start: 60
+start: 20
+increment: 20

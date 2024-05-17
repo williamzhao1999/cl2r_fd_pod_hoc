@@ -12,6 +12,7 @@ rehearsal: 20
 fixed_weight: False
 pod_loss: True
 type_update_criterion_weight: "pod"
-cuda_device: "cuda:1"
+cuda_device: "cuda:0"
 use_partial_memory: True
-start: 60
+start: 20
+increment: 20
